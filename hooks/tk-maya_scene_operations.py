@@ -90,6 +90,11 @@ class BreakdownSceneOperations(Hook):
             node_type = i["type"]
             new_path = i["path"]
 
+            # Custom ALA code from 2020
+            proj_root = os.getenv('PROJ_ROOT')
+            new_path = new_path.replace(proj_root, '$PROJ_ROOT')
+            # end custom code
+
             if node_type == "reference":
                 # maya reference
                 engine.log_debug(
