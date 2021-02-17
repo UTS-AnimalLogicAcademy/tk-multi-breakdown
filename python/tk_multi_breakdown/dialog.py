@@ -31,6 +31,10 @@ class AppDialog(QtGui.QWidget):
         self.ui.chk_red.toggled.connect(self.setup_scene_list)
 
         self.ui.update.clicked.connect(self.update_items)
+        # pulled from ALA tk-multi-breakdown repo
+        self.ui.next.clicked.connect(self.version_up_items)
+        self.ui.previous.clicked.connect(self.version_down_items)
+        # END. pulled from ALA tk-multi-breakdown repo
         self.ui.select_all.clicked.connect(self.select_all_red)
 
         # load data from shotgun
@@ -94,6 +98,87 @@ class AppDialog(QtGui.QWidget):
 
         # finally refresh the UI
         self.setup_scene_list()
+
+    # pulled from ALA tk-multi-breakdown repo
+    def version_up_items(self):
+
+        curr_selection = self.ui.browser.get_selected_items()
+
+        if len(curr_selection) == 0:
+            QtGui.QMessageBox.information(self, "Please select", "Please select items to update!")
+            return
+
+        data = []
+        for x in curr_selection:
+
+            if x.is_latest_version() is None or x.is_latest_version() == True:
+                # either unloaded or up to date
+                continue
+
+            next_version = x.get_next_version_number()
+            self._app.log_info("next_version: %s" % next_version)
+            if next_version is None:
+                continue
+
+            # calculate path based on latest version
+            new_fields = copy.deepcopy(x.data["fields"])
+            new_fields["version"] = next_version
+            new_path = x.data["template"].apply_fields(new_fields)
+
+            d = {}
+            d["node"] = x.data["node_name"]
+            d["type"] = x.data["node_type"]
+            d["path"] = new_path
+
+            data.append(d)
+
+        # call out to hook
+        self._app.execute_hook_method("hook_scene_operations", "update", items=data)
+
+        # finally refresh the UI
+        self.setup_scene_list()
+
+
+
+
+    def version_down_items(self):
+
+        curr_selection = self.ui.browser.get_selected_items()
+
+        if len(curr_selection) == 0:
+            QtGui.QMessageBox.information(self, "Please select", "Please select items to update!")
+            return
+
+        data = []
+        for x in curr_selection:
+            previous_version = x.get_previous_version_number()
+            if previous_version is None:
+                continue
+
+            if previous_version == x.data["fields"]["version"]:
+                continue
+
+            # calculate path based on latest version
+            new_fields = copy.deepcopy(x.data["fields"])
+            new_fields["version"] = previous_version
+            new_path = x.data["template"].apply_fields(new_fields)
+
+            d = {}
+            d["node"] = x.data["node_name"]
+            d["type"] = x.data["node_type"]
+            d["path"] = new_path
+
+            data.append(d)
+
+        self._app.log_debug("data: %s" % data)
+
+        # call out to hook
+        self._app.execute_hook_method("hook_scene_operations", "update", items=data)
+
+        # finally refresh the UI
+        self.setup_scene_list()
+
+    # END. pulled from ALA tk-multi-breakdown repo
 
     def setup_scene_list(self):
         self.ui.browser.clear()

@@ -10,6 +10,14 @@
 
 import os
 import sgtk
+import copy
+import urllib
+import shutil
+import sys
+import tank
+import time
+
+from tank import TankError
 
 # cache the publish data we pull down from shotgun for performance
 g_cached_sg_publish_data = {}
